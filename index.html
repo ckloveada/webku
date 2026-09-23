@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en" x-data="appData()" :class="{ 'dark': darkMode }">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Dive: Language Features of Descriptive Text</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        },
+                        accent: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Alpine.js for lightweight reactivity -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Custom Style Overrides -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .highlight-specific { background-color: #fef08a; color: #854d0e; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+        .highlight-present { background-color: #bfdbfe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+        .highlight-adjective { background-color: #fbcfe8; color: #9d174d; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+        .highlight-verb { background-color: #cbd5e1; color: #334155; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+        .highlight-sensory { background-color: #bbf7d0; color: #166534; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+
+        .dark .highlight-specific { background-color: #854d0e; color: #fef08a; }
+        .dark .highlight-present { background-color: #1e40af; color: #bfdbfe; }
+        .dark .highlight-adjective { background-color: #9d174d; color: #fbcfe8; }
+        .dark .highlight-verb { background-color: #475569; color: #f1f5f9; }
+        .dark .highlight-sensory { background-color: #166534; color: #bbf7d0; }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+        }
+        .dark .glass-panel {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 min-h-screen flex flex-col antialiased">
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-50 glass-panel border-b border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand Title -->
+                <div class="flex items-center space-x-3 cursor-pointer" @click="activeTab = 'overview'">
+                    <div class="p-2.5 bg-gradient-to-tr from-indigo-600 to-blue-500 text-white rounded-xl shadow-md">
+                        <i class="fa-solid fa-book-bookmark text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg sm:text-xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 dark:from-indigo-400 dark:to-blue-400 bg-clip-text text-transparent">
+                            Descriptive Text Mastery
+                        </h1>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Language Features Interactive Learning Module</p>
+                    </div>
+                </div>
+
+                <!-- Global Progress & Settings -->
+                <div class="flex items-center space-x-4">
+                    <!-- Module Progress Tracker -->
+                    <div class="hidden md:flex items-center space-x-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700">
+                        <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Progress:</span>
+                        <div class="w-24 bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                            <div class="bg-indigo-600 h-2 rounded-full transition-all duration-500" :style="`width: ${calculateProgress()}%`"></div>
+                        </div>
+                        <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400" x-text="`${calculateProgress()}%`"></span>
+                    </div>
+
+                    <!-- Dark Mode Toggle -->
+                    <button @click="darkMode = !darkMode" class="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                        <i class="fa-solid" :class="darkMode ? 'fa-sun text-amber-400' : 'fa-moon text-indigo-600'"></i>
+                    </button>
+
+                    <!-- Bilingual Explanation Toggle -->
+                    <button @click="showIndo = !showIndo" class="text-xs font-medium px-3 py-1.5 rounded-lg border transition"
+                        :class="showIndo ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-950 dark:border-indigo-800 dark:text-indigo-300' : 'bg-slate-100 border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'">
+                        <i class="fa-solid fa-language mr-1"></i> <span x-text="showIndo ? 'Bahasa Indonesia: ON' : 'English Only'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scrollable Navigation Tabs -->
+        <nav class="bg-white/50 dark:bg-slate-900/50 border-t border-slate-200/50 dark:border-slate-800/50 px-4 overflow-x-auto scrollbar-none">
+            <div class="max-w-7xl mx-auto flex space-x-1 sm:space-x-2 py-2 text-xs sm:text-sm font-medium">
+                <button @click="activeTab = 'overview'" :class="activeTab === 'overview' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'" class="px-3 py-2 rounded-lg transition whitespace-nowrap">
+                    <i class="fa-solid fa-house mr-1.5"></i> Overview
+                </button>
+                <button @click="activeTab = 'specific'" :class="activeTab === 'specific' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'" class="px-3 py-2 rounded-lg transition whitespace-nowrap">
+                    1. Specific Object
+                </button>
+                <button @click="activeTab = 'present'" :class="activeTab === 'present' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'" class="px-3 py-2 rounded-lg transition whitespace-nowrap">
+                    2. Simple Present
+                </button>
+                <button @click="activeTab = 'adjectives'" :class="activeTab === 'adjectives' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'" class="px-3 py-2 rounded-lg transition whitespace-nowrap">
+                    3. Adjectives & Nouns
+                </button>
+                <button @click="activeTab = 'verbs'" :class="activeTab === 'verbs' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'" class="px-3 py-2 rounded-lg transition whitespace-nowrap">
+                    4. Action Verbs
+                </button>
+                <button @click="activeTab = 'sensory'" :class="activeTab === 'sensory' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'" class="px-3 py-2 rounded-lg transition whitespace-nowrap">
+                    5. Sensory Words
+                </button>
+                <button @click="activeTab = 'analysis'" :class="activeTab === 'analysis' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'" class="px-3 py-2 rounded-lg transition whitespace-nowrap">
+                    <i class="fa-solid fa-magnifying-glass-chart mr-1"></i> Guided Analysis
+                </button>
+                <button @click="activeTab = 'quiz'" :class="activeTab === 'quiz' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'" class="px-3 py-2 rounded-lg transition whitespace-nowrap">
+                    <i class="fa-solid fa-pen-to-square mr-1"></i> Quiz & Practice
+                </button>
+                <button @click="activeTab = 'sandbox'" :class="activeTab === 'sandbox' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'" class="px-3 py-2 rounded-lg transition whitespace-nowrap">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Custom Analyzer
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- TAB 0: OVERVIEW & DASHBOARD -->
+        <div x-show="activeTab === 'overview'" x-transition class="space-y-6">
+            <!-- Hero Banner -->
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-700 via-indigo-600 to-blue-600 text-white p-6 sm:p-10 shadow-xl">
+                <div class="relative z-10 max-w-3xl">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-indigo-100 backdrop-blur-md mb-3">
+                        <i class="fa-solid fa-graduation-cap mr-1.5"></i> English for Vocational & Senior High School
+                    </span>
+                    <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
+                        Deep Dive: Language Features of Descriptive Text
+                    </h2>
+                    <p class="text-indigo-100 text-sm sm:text-base leading-relaxed mb-6">
+                        To write or analyze descriptive text effectively, students must master its 5 Core Language Features. Each element makes descriptions vivid, accurate, and professional.
+                        <span x-show="showIndo" class="block mt-1 text-xs text-indigo-200 italic">
+                            (Untuk menulis atau menganalisis teks deskriptif, siswa harus menguasai 5 Unsur Kebahasaan Utama ini agar deskripsi menjadi hidup, akurat, dan profesional.)
+                        </span>
+                    </p>
+                    <div class="flex flex-wrap gap-3">
+                        <button @click="activeTab = 'specific'" class="px-5 py-2.5 bg-white text-indigo-700 hover:bg-indigo-50 font-semibold rounded-xl shadow transition flex items-center">
+                            Start Learning <i class="fa-solid fa-arrow-right ml-2"></i>
+                        </button>
+                        <button @click="activeTab = 'analysis'" class="px-5 py-2.5 bg-indigo-800/60 hover:bg-indigo-800/80 text-white font-medium rounded-xl transition border border-indigo-400/30">
+                            Jump to Guided Analysis
+                        </button>
+                    </div>
+                </div>
+                <!-- Background Graphic Decorative Elements -->
+                <div class="absolute -right-12 -bottom-12 opacity-15 pointer-events-none">
+                    <i class="fa-solid fa-pen-nib text-[260px]"></i>
+                </div>
+            </div>
+
+            <!-- 5 Core Features Grid Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Feature 1 Card -->
+                <div @click="activeTab = 'specific'" class="group p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-indigo-500 transition cursor-pointer">
+                    <div class="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl font-bold mb-4 group-hover:scale-110 transition-transform">
+                        1
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Specific Object</h3>
+                    <p class="text-xs text-amber-600 dark:text-amber-400 font-medium mb-2" x-show="showIndo">Fokus pada Objek Spesifik</p>
+                    <p class="text-sm text-slate-600 dark:text-slate-300">Focuses on one unique entity rather than a general category (e.g., Room 204 Paper Shredder vs All Shredders).</p>
+                </div>
+
+                <!-- Feature 2 Card -->
+                <div @click="activeTab = 'present'" class="group p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-indigo-500 transition cursor-pointer">
+                    <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl font-bold mb-4 group-hover:scale-110 transition-transform">
+                        2
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Simple Present Tense</h3>
+                    <p class="text-xs text-blue-600 dark:text-blue-400 font-medium mb-2" x-show="showIndo">Penggunaan Tata Bahasa Masa Kini</p>
+                    <p class="text-sm text-slate-600 dark:text-slate-300">Expresses timeless facts, current states, and daily work habits using Verbal and Nominal formulas.</p>
+                </div>
+
+                <!-- Feature 3 Card -->
+                <div @click="activeTab = 'adjectives'" class="group p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-indigo-500 transition cursor-pointer">
+                    <div class="w-12 h-12 rounded-xl bg-pink-100 dark:bg-pink-950 text-pink-600 dark:text-pink-400 flex items-center justify-center text-xl font-bold mb-4 group-hover:scale-110 transition-transform">
+                        3
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Adjectives & Phrases</h3>
+                    <p class="text-xs text-pink-600 dark:text-pink-400 font-medium mb-2" x-show="showIndo">Kata Sifat & Frasa Deskriptif</p>
+                    <p class="text-sm text-slate-600 dark:text-slate-300">Modifies nouns with physical characteristics, quality states, professional traits, and rich Noun Phrases.</p>
+                </div>
+
+                <!-- Feature 4 Card -->
+                <div @click="activeTab = 'verbs'" class="group p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-indigo-500 transition cursor-pointer">
+                    <div class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center text-xl font-bold mb-4 group-hover:scale-110 transition-transform">
+                        4
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Action Verbs</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mb-2" x-show="showIndo">Kata Kerja Aksi</p>
+                    <p class="text-sm text-slate-600 dark:text-slate-300">Describes physical workplace actions across the administrative workflow (Input $\rightarrow$ Processing $\rightarrow$ Output).</p>
+                </div>
+
+                <!-- Feature 5 Card -->
+                <div @click="activeTab = 'sensory'" class="group p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-indigo-500 transition cursor-pointer">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold mb-4 group-hover:scale-110 transition-transform">
+                        5
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Sensory Words</h3>
+                    <p class="text-xs text-emerald-600 dark:text-emerald-400 font-medium mb-2" x-show="showIndo">Kata-Kata Panca Indera</p>
+                    <p class="text-sm text-slate-600 dark:text-slate-300">Appeals to human senses (Sight, Sound, Touch, Smell) to create vivid imagery in office and classroom environments.</p>
+                </div>
+
+                <!-- Guided Practice Card -->
+                <div @click="activeTab = 'quiz'" class="group p-6 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-2xl shadow-sm hover:shadow-lg transition cursor-pointer flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl font-bold mb-4">
+                            <i class="fa-solid fa-trophy"></i>
+                        </div>
+                        <h3 class="text-lg font-bold mb-1">Interactive Worksheet & Quiz</h3>
+                        <p class="text-sm text-indigo-100">Test your mastery, earn badges, and export your performance summary report!</p>
+                    </div>
+                    <div class="mt-4 flex items-center font-semibold text-xs text-indigo-200 group-hover:text-white">
+                        Take Practice Test <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 1: SPECIFIC OBJECT -->
+        <div x-show="activeTab === 'specific'" x-transition class="space-y-6" x-init="markVisited('specific')">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="px-3 py-1 bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 text-xs font-bold rounded-lg uppercase">
+                        Feature #1
+                    </div>
+                    <h2 class="text-2xl font-bold">Specific Object <span class="text-sm font-normal text-slate-500 dark:text-slate-400" x-show="showIndo">(Fokus pada Objek Spesifik)</span></h2>
+                </div>
+                
+                <p class="text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
+                    Unlike <strong>Report Texts</strong> that describe a general category of things (e.g., Computers, Offices, Trees), a <strong>Descriptive Text</strong> focuses on only <strong>one specific entity</strong> that possesses unique characteristics.
+                </p>
+
+                <!-- General vs Specific Interactive Comparison -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-xl p-5">
+                        <div class="flex items-center space-x-2 text-red-700 dark:text-red-400 font-bold mb-2">
+                            <i class="fa-solid fa-xmark-circle"></i>
+                            <span>General Object (Report Text)</span>
+                        </div>
+                        <p class="text-xl font-medium text-slate-800 dark:text-slate-200 mb-2">"Offices use furniture."</p>
+                        <p class="text-xs text-slate-600 dark:text-slate-400">Refers to all offices in the entire world without specific context.</p>
+                    </div>
+
+                    <div class="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 rounded-xl p-5">
+                        <div class="flex items-center space-x-2 text-emerald-700 dark:text-emerald-400 font-bold mb-2">
+                            <i class="fa-solid fa-check-circle"></i>
+                            <span>Specific Object (Descriptive Text)</span>
+                        </div>
+                        <p class="text-xl font-medium text-slate-800 dark:text-slate-200 mb-2">"The Front Desk of SMK Negeri 1 Palangka Raya."</p>
+                        <p class="text-xs text-slate-600 dark:text-slate-400">Refers to one designated reception desk in a specific local institution.</p>
+                    </div>
+                </div>
+
+                <!-- Office Administration & Local Context Table -->
+                <h3 class="text-lg font-bold mb-4 flex items-center">
+                    <i class="fa-solid fa-table-list mr-2 text-indigo-600"></i> Office & Local Context Examples
+                </h3>
+                <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 mb-8">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-100 dark:bg-slate-700/50 text-slate-700 dark:text-slate-200 uppercase text-xs font-semibold">
+                            <tr>
+                                <th class="p-3.5">General Object (Report)</th>
+                                <th class="p-3.5">Specific Object (Descriptive Text)</th>
+                                <th class="p-3.5">Why It Is Specific</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                <td class="p-3.5 font-medium text-slate-500">Paper Shredder</td>
+                                <td class="p-3.5 font-bold text-amber-600 dark:text-amber-400">The Heavy-Duty Shredder in Room 204</td>
+                                <td class="p-3.5 text-xs text-slate-600 dark:text-slate-300">Describes a specific machine located in a designated school lab.</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                <td class="p-3.5 font-medium text-slate-500">Secretaries</td>
+                                <td class="p-3.5 font-bold text-amber-600 dark:text-amber-400">Mrs. Anita, the Executive Secretary of Governor's Office</td>
+                                <td class="p-3.5 text-xs text-slate-600 dark:text-slate-300">Focuses on one individual professional figure.</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                <td class="p-3.5 font-medium text-slate-500">Traditional Houses</td>
+                                <td class="p-3.5 font-bold text-amber-600 dark:text-amber-400">Huma Betang of Desa Sangai</td>
+                                <td class="p-3.5 text-xs text-slate-600 dark:text-slate-300">Describes one unique traditional longhouse in Central Kalimantan.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Interactive Categorization Mini-Game -->
+                <div class="p-5 bg-indigo-50 dark:bg-indigo-950/30 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                    <h4 class="font-bold text-indigo-900 dark:text-indigo-200 mb-2 flex items-center">
+                        <i class="fa-solid fa-gamepad mr-2"></i> Mini Check: Is it Specific or General?
+                    </h4>
+                    <p class="text-xs text-indigo-700 dark:text-indigo-300 mb-4">Click the correct type for each phrase below:</p>
+
+                    <div class="space-y-3">
+                        <template x-for="(item, idx) in specificQuizItems" :key="idx">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 gap-2">
+                                <span class="font-medium text-sm" x-text="item.text"></span>
+                                <div class="flex items-center space-x-2">
+                                    <button @click="checkSpecificAnswer(idx, 'General')" 
+                                        :class="item.userAns === 'General' ? (item.isCorrect ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white') : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'"
+                                        class="px-3 py-1 rounded text-xs font-semibold transition">
+                                        General
+                                    </button>
+                                    <button @click="checkSpecificAnswer(idx, 'Specific')" 
+                                        :class="item.userAns === 'Specific' ? (item.isCorrect ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white') : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'"
+                                        class="px-3 py-1 rounded text-xs font-semibold transition">
+                                        Specific
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: SIMPLE PRESENT TENSE -->
+        <div x-show="activeTab === 'present'" x-transition class="space-y-6" x-init="markVisited('present')">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 text-xs font-bold rounded-lg uppercase">
+                        Feature #2
+                    </div>
+                    <h2 class="text-2xl font-bold">Simple Present Tense <span class="text-sm font-normal text-slate-500 dark:text-slate-400" x-show="showIndo">(Penggunaan Tata Bahasa Masa Kini)</span></h2>
+                </div>
+
+                <p class="text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
+                    Descriptive text uses the <strong>Simple Present Tense</strong> because it expresses timeless facts, general truths, current conditions, and daily habitual actions.
+                </p>
+
+                <!-- Formulas Card Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <!-- Verbal Sentence Formula -->
+                    <div class="p-5 rounded-2xl border border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/20">
+                        <div class="flex items-center space-x-2 text-blue-700 dark:text-blue-400 font-bold text-lg mb-3">
+                            <i class="fa-solid fa-bolt"></i>
+                            <span>A. Verbal Sentences (Action / State Verbs)</span>
+                        </div>
+                        <div class="p-3 bg-white dark:bg-slate-800 rounded-xl font-mono text-center text-indigo-600 dark:text-indigo-400 font-bold border border-blue-100 dark:border-blue-900 mb-4 shadow-inner">
+                            Subject + Verb 1 (-s/-es) + Object/Complement
+                        </div>
+                        
+                        <!-- Rules Box -->
+                        <div class="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                            <div class="p-2.5 bg-white/80 dark:bg-slate-800/80 rounded-lg border border-slate-200 dark:border-slate-700">
+                                <span class="font-bold text-blue-600">Singular Subject</span> (He, She, It, The Machine, The Receptionist) $\rightarrow$ <strong>Add -s / -es</strong> to the verb.
+                                <p class="text-slate-500 italic mt-0.5">Example: The receptionist <strong>greets</strong> guests politely every morning.</p>
+                            </div>
+                            <div class="p-2.5 bg-white/80 dark:bg-slate-800/80 rounded-lg border border-slate-200 dark:border-slate-700">
+                                <span class="font-bold text-blue-600">Plural Subject</span> (They, We, You, I, The Files, The Clerks) $\rightarrow$ <strong>Base Verb</strong> (No -s/-es).
+                                <p class="text-slate-500 italic mt-0.5">Example: Administrative assistants <strong>organize</strong> incoming letters carefully.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nominal Sentence Formula -->
+                    <div class="p-5 rounded-2xl border border-purple-200 dark:border-purple-900 bg-purple-50/50 dark:bg-purple-950/20">
+                        <div class="flex items-center space-x-2 text-purple-700 dark:text-purple-400 font-bold text-lg mb-3">
+                            <i class="fa-solid fa-link"></i>
+                            <span>B. Nominal Sentences (Linking Verbs / Be)</span>
+                        </div>
+                        <div class="p-3 bg-white dark:bg-slate-800 rounded-xl font-mono text-center text-purple-600 dark:text-purple-400 font-bold border border-purple-100 dark:border-purple-900 mb-4 shadow-inner">
+                            Subject + am / is / are + Adjective / Noun / Adverb
+                        </div>
+                        
+                        <!-- Examples Box -->
+                        <div class="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                            <div class="p-2.5 bg-white/80 dark:bg-slate-800/80 rounded-lg border border-slate-200 dark:border-slate-700">
+                                <span class="font-bold text-purple-600">Singular Subject + is</span>
+                                <p class="text-slate-500 italic mt-0.5">The Kahayan Conference Hall <strong>is</strong> spacious and well-ventilated.</p>
+                            </div>
+                            <div class="p-2.5 bg-white/80 dark:bg-slate-800/80 rounded-lg border border-slate-200 dark:border-slate-700">
+                                <span class="font-bold text-purple-600">Plural Subject + are</span>
+                                <p class="text-slate-500 italic mt-0.5">The official archives <strong>are</strong> stored in moisture-resistant boxes.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subject-Verb Agreement Interactive Checker -->
+                <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+                    <h3 class="font-bold text-lg mb-2 flex items-center">
+                        <i class="fa-solid fa-sliders text-blue-500 mr-2"></i> Interactive Subject-Verb Agreement Simulator
+                    </h3>
+                    <p class="text-xs text-slate-500 mb-4">Choose a subject and action verb to test rule agreement live:</p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">1. Select Subject:</label>
+                            <select x-model="simSubject" class="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm">
+                                <option value="The receptionist">The receptionist (Singular)</option>
+                                <option value="The clerks">The clerks (Plural)</option>
+                                <option value="Mrs. Anita">Mrs. Anita (Singular)</option>
+                                <option value="Secretaries">Secretaries (Plural)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">2. Select Verb Form:</label>
+                            <select x-model="simVerb" class="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm">
+                                <option value="scans">scans (with -s)</option>
+                                <option value="scan">scan (base verb)</option>
+                                <option value="greets">greets (with -s)</option>
+                                <option value="greet">greet (base verb)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">3. Object Context:</label>
+                            <input type="text" value="incoming letters carefully." readonly class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-500 text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Live Grammar Validation Result Box -->
+                    <div class="p-4 rounded-xl border transition" :class="checkGrammarSim().isValid ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 text-emerald-800 dark:text-emerald-300' : 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 text-rose-800 dark:text-rose-300'">
+                        <div class="flex items-center space-x-2 font-bold mb-1">
+                            <i class="fa-solid" :class="checkGrammarSim().isValid ? 'fa-circle-check text-emerald-600' : 'fa-circle-xmark text-rose-600'"></i>
+                            <span x-text="checkGrammarSim().isValid ? 'Grammatically Correct!' : 'Subject-Verb Mismatch!'"></span>
+                        </div>
+                        <p class="text-sm font-semibold italic" x-text="`&quot;${simSubject} ${simVerb} incoming letters carefully.&quot;`"></p>
+                        <p class="text-xs mt-1" x-text="checkGrammarSim().reason"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: ADJECTIVES & DESCRIPTIVE PHRASES -->
+        <div x-show="activeTab === 'adjectives'" x-transition class="space-y-6" x-init="markVisited('adjectives')">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="px-3 py-1 bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-300 text-xs font-bold rounded-lg uppercase">
+                        Feature #3
+                    </div>
+                    <h2 class="text-2xl font-bold">Adjectives & Descriptive Phrases <span class="text-sm font-normal text-slate-500 dark:text-slate-400" x-show="showIndo">(Kata Sifat & Frasa Deskriptif)</span></h2>
+                </div>
+
+                <p class="text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
+                    Adjectives provide detail by describing the size, shape, material, quality, or traits of an object. In administrative contexts, precise adjectives describe office tools, setups, and professional behaviors.
+                </p>
+
+                <!-- Categorized Adjective Bank with Filter/Search -->
+                <div class="mb-8">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                        <h3 class="font-bold text-lg flex items-center">
+                            <i class="fa-solid fa-tags text-pink-500 mr-2"></i> Administrative Adjective Bank
+                        </h3>
+                        <div class="flex items-center space-x-2 w-full sm:w-auto">
+                            <input type="text" x-model="adjSearch" placeholder="Search adjective..." class="px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 w-full sm:w-48">
+                            <select x-model="adjFilter" class="px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+                                <option value="all">All Categories</option>
+                                <option value="physical">Physical Characteristics</option>
+                                <option value="quality">State / Quality</option>
+                                <option value="trait">Professional Traits</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Filtered Chips Grid -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        <template x-for="adj in filteredAdjectives" :key="adj.word">
+                            <div class="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-pink-400 transition">
+                                <span class="font-bold text-pink-600 dark:text-pink-400 text-sm block" x-text="adj.word"></span>
+                                <span class="text-[10px] uppercase tracking-wider text-slate-400 block mb-1" x-text="adj.cat"></span>
+                                <span class="text-xs text-slate-600 dark:text-slate-300 italic" x-text="adj.meaning"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Advanced Concept: Noun Phrase Builder Tool -->
+                <div class="bg-gradient-to-r from-pink-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800 rounded-2xl p-6 border border-pink-200 dark:border-slate-700">
+                    <h3 class="font-bold text-lg text-pink-900 dark:text-pink-200 mb-2 flex items-center">
+                        <i class="fa-solid fa-cubes mr-2"></i> Noun Phrase Builder (Adjective + Adjective + Noun)
+                    </h3>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 mb-6">Combine single adjectives to construct descriptive noun phrases:</p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Adjective 1 (Trait / Quality)</label>
+                            <select x-model="npAdj1" class="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-pink-600">
+                                <option value="An ergonomic">An ergonomic</option>
+                                <option value="A high-speed">A high-speed</option>
+                                <option value="A traditional">A traditional</option>
+                                <option value="A spacious">A spacious</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Adjective 2 (Material / Type)</label>
+                            <select x-model="npAdj2" class="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-pink-600">
+                                <option value="mesh">mesh</option>
+                                <option value="digital">digital</option>
+                                <option value="wooden">wooden</option>
+                                <option value="metallic">metallic</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Target Noun</label>
+                            <select x-model="npNoun" class="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-indigo-600">
+                                <option value="office chair">office chair</option>
+                                <option value="document scanner">document scanner</option>
+                                <option value="Huma Betang frame">Huma Betang motif frame</option>
+                                <option value="filing cabinet">filing cabinet</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Live Output Phrase -->
+                    <div class="p-4 bg-white dark:bg-slate-800 rounded-xl border border-pink-300 dark:border-pink-800 text-center shadow-md">
+                        <span class="text-xs text-slate-400 block mb-1">Generated Noun Phrase:</span>
+                        <span class="text-xl sm:text-2xl font-extrabold text-indigo-600 dark:text-indigo-400" x-text="`${npAdj1} ${npAdj2} ${npNoun}`"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: ACTION VERBS PIPELINE -->
+        <div x-show="activeTab === 'verbs'" x-transition class="space-y-6" x-init="markVisited('verbs')">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="px-3 py-1 bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200 text-xs font-bold rounded-lg uppercase">
+                        Feature #4
+                    </div>
+                    <h2 class="text-2xl font-bold">Action Verbs <span class="text-sm font-normal text-slate-500 dark:text-slate-400" x-show="showIndo">(Kata Kerja Aksi)</span></h2>
+                </div>
+
+                <p class="text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
+                    Action verbs describe physical actions or movements performed by a subject. In office administration, action verbs map directly onto administrative workflow stages.
+                </p>
+
+                <!-- 3-Stage Visual Workflow Pipeline -->
+                <h3 class="font-bold text-lg mb-4 flex items-center">
+                    <i class="fa-solid fa-gears text-indigo-500 mr-2"></i> Administrative Action Verb Workflow
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <!-- Stage 1: Input -->
+                    <div @click="selectedWorkflowStage = 'input'" :class="selectedWorkflowStage === 'input' ? 'ring-2 ring-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30' : 'bg-slate-50 dark:bg-slate-900'" class="p-5 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer transition">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">[ 1. INPUT ]</span>
+                            <i class="fa-solid fa-inbox text-xl text-indigo-500"></i>
+                        </div>
+                        <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2">Receiving & Entry</h4>
+                        <div class="flex flex-wrap gap-1.5">
+                            <span class="px-2 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded text-xs font-semibold">Receives</span>
+                            <span class="px-2 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded text-xs font-semibold">Scans</span>
+                            <span class="px-2 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded text-xs font-semibold">Collects</span>
+                        </div>
+                    </div>
+
+                    <!-- Stage 2: Processing -->
+                    <div @click="selectedWorkflowStage = 'processing'" :class="selectedWorkflowStage === 'processing' ? 'ring-2 ring-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30' : 'bg-slate-50 dark:bg-slate-900'" class="p-5 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer transition">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">[ 2. PROCESSING ]</span>
+                            <i class="fa-solid fa-sliders text-xl text-indigo-500"></i>
+                        </div>
+                        <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2">Handling & Editing</h4>
+                        <div class="flex flex-wrap gap-1.5">
+                            <span class="px-2 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded text-xs font-semibold">Sorts</span>
+                            <span class="px-2 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded text-xs font-semibold">Types</span>
+                            <span class="px-2 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded text-xs font-semibold">Edits</span>
+                        </div>
+                    </div>
+
+                    <!-- Stage 3: Output / Storage -->
+                    <div @click="selectedWorkflowStage = 'output'" :class="selectedWorkflowStage === 'output' ? 'ring-2 ring-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30' : 'bg-slate-50 dark:bg-slate-900'" class="p-5 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer transition">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">[ 3. OUTPUT / STORAGE ]</span>
+                            <i class="fa-solid fa-box-archive text-xl text-indigo-500"></i>
+                        </div>
+                        <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-2">Filing & Delivery</h4>
+                        <div class="flex flex-wrap gap-1.5">
+                            <span class="px-2 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded text-xs font-semibold">Files</span>
+                            <span class="px-2 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded text-xs font-semibold">Prints</span>
+                            <span class="px-2 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded text-xs font-semibold">Distributes</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Sentence Context Display -->
+                <div class="p-5 bg-slate-900 text-white rounded-2xl shadow-lg">
+                    <h4 class="text-xs font-bold uppercase text-indigo-400 mb-3 flex items-center">
+                        <i class="fa-solid fa-terminal mr-2"></i> Workflow Action Examples
+                    </h4>
+                    <div class="space-y-3 text-sm">
+                        <template x-for="sentence in workflowSentences[selectedWorkflowStage]" :key="sentence">
+                            <div class="flex items-start space-x-3 p-3 bg-slate-800/80 rounded-xl border border-slate-700">
+                                <i class="fa-solid fa-chevron-right text-indigo-400 mt-1 text-xs"></i>
+                                <p x-html="sentence"></p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: SENSORY WORDS & IMAGERY -->
+        <div x-show="activeTab === 'sensory'" x-transition class="space-y-6" x-init="markVisited('sensory')">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="px-3 py-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-xs font-bold rounded-lg uppercase">
+                        Feature #5
+                    </div>
+                    <h2 class="text-2xl font-bold">Sensory Words / Imagery <span class="text-sm font-normal text-slate-500 dark:text-slate-400" x-show="showIndo">(Kata-Kata Panca Indera)</span></h2>
+                </div>
+
+                <p class="text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
+                    Sensory words appeal to human senses (Sight, Sound, Touch, Smell, Taste) to build a vivid mental picture of the environment being described.
+                </p>
+
+                <!-- 4 Office Sensory Cards Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <!-- Sight -->
+                    <div class="p-5 bg-amber-50/60 dark:bg-slate-900 rounded-2xl border border-amber-200 dark:border-slate-700">
+                        <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg mb-3">
+                            <i class="fa-solid fa-eye"></i>
+                        </div>
+                        <h4 class="font-bold text-amber-900 dark:text-amber-300">SIGHT (Penglihatan)</h4>
+                        <ul class="text-xs space-y-1 text-slate-600 dark:text-slate-300 mt-2">
+                            <li>• Brightly lit</li>
+                            <li>• Cluttered / Organized</li>
+                            <li>• Glossy finish</li>
+                            <li>• Neon-labeled</li>
+                        </ul>
+                    </div>
+
+                    <!-- Sound -->
+                    <div class="p-5 bg-blue-50/60 dark:bg-slate-900 rounded-2xl border border-blue-200 dark:border-slate-700">
+                        <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-lg mb-3">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </div>
+                        <h4 class="font-bold text-blue-900 dark:text-blue-300">SOUND (Pengendengan)</h4>
+                        <ul class="text-xs space-y-1 text-slate-600 dark:text-slate-300 mt-2">
+                            <li>• Quiet workspace</li>
+                            <li>• Humming printer</li>
+                            <li>• Clicking keyboards</li>
+                            <li>• Soft acoustic chime</li>
+                        </ul>
+                    </div>
+
+                    <!-- Touch -->
+                    <div class="p-5 bg-emerald-50/60 dark:bg-slate-900 rounded-2xl border border-emerald-200 dark:border-slate-700">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg mb-3">
+                            <i class="fa-solid fa-hand"></i>
+                        </div>
+                        <h4 class="font-bold text-emerald-900 dark:text-emerald-300">TOUCH (Perabaan)</h4>
+                        <ul class="text-xs space-y-1 text-slate-600 dark:text-slate-300 mt-2">
+                            <li>• Smooth wooden surface</li>
+                            <li>• Cold metallic handles</li>
+                            <li>• Soft cushioned seat</li>
+                            <li>• Textured paper</li>
+                        </ul>
+                    </div>
+
+                    <!-- Smell -->
+                    <div class="p-5 bg-purple-50/60 dark:bg-slate-900 rounded-2xl border border-purple-200 dark:border-slate-700">
+                        <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-lg mb-3">
+                            <i class="fa-solid fa-wind"></i>
+                        </div>
+                        <h4 class="font-bold text-purple-900 dark:text-purple-300">SMELL (Penciuman)</h4>
+                        <ul class="text-xs space-y-1 text-slate-600 dark:text-slate-300 mt-2">
+                            <li>• Fresh paper aroma</li>
+                            <li>• Aromatic coffee scent</li>
+                            <li>• Sanitized air</li>
+                            <li>• Polished mahogany smell</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Multi-Sensory Sentence Highlight Demo -->
+                <div class="p-6 bg-slate-900 text-white rounded-2xl">
+                    <h4 class="text-xs font-bold uppercase text-emerald-400 mb-3 flex items-center">
+                        <i class="fa-solid fa-layer-group mr-2"></i> Sensory Sentence Highlight Simulator
+                    </h4>
+                    
+                    <p class="text-base sm:text-lg leading-relaxed mb-6 font-medium">
+                        "Inside the executive room, the air is 
+                        <span class="bg-emerald-800 text-emerald-200 px-2 py-0.5 rounded font-bold" title="Touch / Smell">cool and fresh</span>, 
+                        illuminated by 
+                        <span class="bg-amber-800 text-amber-200 px-2 py-0.5 rounded font-bold" title="Sight">brightly lit ceiling lights</span>, 
+                        with only the 
+                        <span class="bg-blue-800 text-blue-200 px-2 py-0.5 rounded font-bold" title="Sound">gentle humming of the air conditioner</span> 
+                        breaking the silence."
+                    </p>
+
+                    <div class="flex flex-wrap gap-4 text-xs">
+                        <span class="flex items-center"><span class="w-3 h-3 bg-emerald-500 rounded-full mr-1.5"></span> Touch & Smell (Cool & Fresh)</span>
+                        <span class="flex items-center"><span class="w-3 h-3 bg-amber-500 rounded-full mr-1.5"></span> Sight (Brightly lit)</span>
+                        <span class="flex items-center"><span class="w-3 h-3 bg-blue-500 rounded-full mr-1.5"></span> Sound (Gentle humming)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 6: GUIDED TEXT ANALYSIS MODULE -->
+        <div x-show="activeTab === 'analysis'" x-transition class="space-y-6" x-init="markVisited('analysis')">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold flex items-center">
+                            <i class="fa-solid fa-magnifying-glass-chart text-indigo-600 mr-2.5"></i> Guided Text Analysis Module
+                        </h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Extracting 5 Language Features from a sample administrative text</p>
+                    </div>
+
+                    <!-- Highlight Feature Filter Toggles -->
+                    <div class="flex flex-wrap gap-1.5 text-xs font-semibold">
+                        <button @click="toggleFilter('all')" class="px-3 py-1.5 rounded-lg border transition" :class="activeHighlight === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200'">Show All</button>
+                        <button @click="toggleFilter('specific')" class="px-3 py-1.5 rounded-lg border transition" :class="activeHighlight === 'specific' ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300'">1. Specific</button>
+                        <button @click="toggleFilter('present')" class="px-3 py-1.5 rounded-lg border transition" :class="activeHighlight === 'present' ? 'bg-blue-600 text-white border-blue-600' : 'bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300'">2. Present</button>
+                        <button @click="toggleFilter('adjective')" class="px-3 py-1.5 rounded-lg border transition" :class="activeHighlight === 'adjective' ? 'bg-pink-600 text-white border-pink-600' : 'bg-pink-100 dark:bg-pink-950 text-pink-800 dark:text-pink-300'">3. Adjectives</button>
+                        <button @click="toggleFilter('verb')" class="px-3 py-1.5 rounded-lg border transition" :class="activeHighlight === 'verb' ? 'bg-slate-700 text-white border-slate-700' : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200'">4. Verbs</button>
+                        <button @click="toggleFilter('sensory')" class="px-3 py-1.5 rounded-lg border transition" :class="activeHighlight === 'sensory' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'">5. Sensory</button>
+                    </div>
+                </div>
+
+                <!-- Interactive Text Paragraph Display -->
+                <div class="p-6 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 leading-relaxed text-base sm:text-lg mb-8">
+                    <span :class="(activeHighlight === 'all' || activeHighlight === 'specific') ? 'highlight-specific' : ''">Miss Dayang</span> 
+                    <span :class="(activeHighlight === 'all' || activeHighlight === 'present') ? 'highlight-present' : ''">is</span> a 
+                    <span :class="(activeHighlight === 'all' || activeHighlight === 'adjective') ? 'highlight-adjective' : ''">senior</span> administrative secretary at the 
+                    <span :class="(activeHighlight === 'all' || activeHighlight === 'specific') ? 'highlight-specific' : ''">Governor's Office in Palangka Raya</span>. 
+                    She <span :class="(activeHighlight === 'all' || activeHighlight === 'verb') ? 'highlight-verb' : ''">works</span> in a 
+                    <span :class="(activeHighlight === 'all' || activeHighlight === 'sensory') ? 'highlight-sensory' : ''">brightly lit</span> and 
+                    <span :class="(activeHighlight === 'all' || activeHighlight === 'adjective') ? 'highlight-adjective' : ''">neat</span> workspace. 
+                    Every morning, she <span :class="(activeHighlight === 'all' || activeHighlight === 'verb') ? 'highlight-verb' : ''">warmly receives</span> official guests and 
+                    <span :class="(activeHighlight === 'all' || activeHighlight === 'verb') ? 'highlight-verb' : ''">prints</span> important daily schedules using a 
+                    <span :class="(activeHighlight === 'all' || activeHighlight === 'adjective') ? 'highlight-adjective' : ''">high-speed</span> laser printer. 
+                    Her desk features a <span :class="(activeHighlight === 'all' || activeHighlight === 'sensory') ? 'highlight-sensory' : ''">smooth mahogany</span> finish decorated with a 
+                    <span :class="(activeHighlight === 'all' || activeHighlight === 'adjective') ? 'highlight-adjective' : ''">small wooden statue</span> inspired by Dayak carving.
+                </div>
+
+                <!-- Extraction Summary Table -->
+                <h3 class="font-bold text-lg mb-4">Comprehensive Feature Extraction Table</h3>
+                <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold uppercase">
+                            <tr>
+                                <th class="p-3.5">Language Feature</th>
+                                <th class="p-3.5">Extracted Example from Text</th>
+                                <th class="p-3.5">Explanation / Function</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+                            <tr>
+                                <td class="p-3.5 font-bold text-amber-600 dark:text-amber-400">1. Specific Object</td>
+                                <td class="p-3.5 font-mono text-xs bg-amber-50 dark:bg-amber-950/40">Miss Dayang (Senior Secretary)</td>
+                                <td class="p-3.5 text-xs text-slate-600 dark:text-slate-300">Describes one specific individual, not secretaries in general.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3.5 font-bold text-blue-600 dark:text-blue-400">2. Simple Present Tense</td>
+                                <td class="p-3.5 font-mono text-xs bg-blue-50 dark:bg-blue-950/40">she works / she receives / prints</td>
+                                <td class="p-3.5 text-xs text-slate-600 dark:text-slate-300">Uses Present Tense (S + V1-s) to state daily work habits.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3.5 font-bold text-pink-600 dark:text-pink-400">3. Adjectives</td>
+                                <td class="p-3.5 font-mono text-xs bg-pink-50 dark:bg-pink-950/40">senior, neat, high-speed, small, wooden</td>
+                                <td class="p-3.5 text-xs text-slate-600 dark:text-slate-300">Modifies nouns to give detailed qualities of the office setting.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3.5 font-bold text-slate-700 dark:text-slate-300">4. Action Verbs</td>
+                                <td class="p-3.5 font-mono text-xs bg-slate-100 dark:bg-slate-700">receives, prints, works</td>
+                                <td class="p-3.5 text-xs text-slate-600 dark:text-slate-300">Shows physical workplace activities performed by the secretary.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3.5 font-bold text-emerald-600 dark:text-emerald-400">5. Sensory Words</td>
+                                <td class="p-3.5 font-mono text-xs bg-emerald-50 dark:bg-emerald-950/40">brightly lit (Sight), smooth mahogany (Touch)</td>
+                                <td class="p-3.5 text-xs text-slate-600 dark:text-slate-300">Helps the reader visualize lighting and feel the desk texture.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 7: INTERACTIVE QUIZ & PRACTICE WORKSHEET -->
+        <div x-show="activeTab === 'quiz'" x-transition class="space-y-6" x-init="markVisited('quiz')">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                <!-- Quiz Header -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-200 dark:border-slate-700">
+                    <div>
+                        <h2 class="text-2xl font-bold flex items-center">
+                            <i class="fa-solid fa-pen-to-square text-indigo-600 mr-2.5"></i> Interactive Practice Worksheet
+                        </h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Test your mastery of the 5 language features of descriptive text</p>
+                    </div>
+
+                    <!-- Score Badge Display -->
+                    <div class="flex items-center space-x-3 bg-indigo-50 dark:bg-indigo-950/50 px-4 py-2 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                        <i class="fa-solid fa-award text-2xl text-amber-500"></i>
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-indigo-600 dark:text-indigo-300 block">Current Score</span>
+                            <span class="text-lg font-extrabold text-indigo-900 dark:text-indigo-100" x-text="`${calculateQuizScore()} / ${quizQuestions.length * 20}`"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Questions List -->
+                <div class="space-y-6 mb-8">
+                    <template x-for="(q, idx) in quizQuestions" :key="idx">
+                        <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
+                            <div class="flex items-center space-x-2 mb-3">
+                                <span class="px-2.5 py-0.5 bg-indigo-600 text-white font-bold text-xs rounded-md" x-text="`Q${idx + 1}`"></span>
+                                <span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400" x-text="q.category"></span>
+                            </div>
+                            <h4 class="font-bold text-slate-900 dark:text-white mb-4" x-text="q.question"></h4>
+
+                            <div class="space-y-2">
+                                <template x-for="(opt, optIdx) in q.options" :key="optIdx">
+                                    <button @click="selectQuizOption(idx, optIdx)" 
+                                        :class="q.userAnswer === optIdx ? (optIdx === q.correct ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white') : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700'"
+                                        class="w-full text-left p-3 rounded-xl text-sm font-medium transition flex items-center justify-between">
+                                        <span x-text="opt"></span>
+                                        <i x-show="q.userAnswer === optIdx && optIdx === q.correct" class="fa-solid fa-circle-check"></i>
+                                        <i x-show="q.userAnswer === optIdx && optIdx !== q.correct" class="fa-solid fa-circle-xmark"></i>
+                                    </button>
+                                </template>
+                            </div>
+
+                            <!-- Answer Feedback Box -->
+                            <div x-show="q.userAnswer !== null" class="mt-3 p-3 rounded-xl text-xs font-medium" :class="q.userAnswer === q.correct ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200' : 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200'">
+                                <p x-text="q.explanation"></p>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Export / Summary Button -->
+                <div class="p-6 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h3 class="font-bold text-lg">Completed the Worksheet?</h3>
+                        <p class="text-xs text-indigo-100">Generate your performance report badge card below.</p>
+                    </div>
+                    <button @click="showScoreModal = true" class="px-5 py-2.5 bg-white text-indigo-700 hover:bg-indigo-50 font-bold rounded-xl shadow transition">
+                        <i class="fa-solid fa-print mr-1.5"></i> View Summary Report Card
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 8: CUSTOM TEXT ANALYZER SANDBOX -->
+        <div x-show="activeTab === 'sandbox'" x-transition class="space-y-6" x-init="markVisited('sandbox')">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="p-2.5 bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                        <i class="fa-solid fa-wand-magic-sparkles text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold">Custom Text Sandbox Analyzer</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Paste your own descriptive text to analyze its language features</p>
+                    </div>
+                </div>
+
+                <!-- Textarea Input -->
+                <div class="mb-4">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Your Input Text:</label>
+                    <textarea x-model="userCustomText" rows="5" placeholder="Type or paste a descriptive text here..." class="w-full p-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-sm focus:ring-2 focus:ring-indigo-500 font-sans"></textarea>
+                </div>
+
+                <!-- Action Controls -->
+                <div class="flex flex-wrap gap-2 mb-6">
+                    <button @click="analyzeCustomText()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow transition flex items-center">
+                        <i class="fa-solid fa-microscope mr-2"></i> Analyze Language Features
+                    </button>
+                    <button @click="userCustomText = sampleSandboxText; analyzeCustomText()" class="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 font-medium rounded-xl text-xs transition">
+                        Load Sample Text
+                    </button>
+                </div>
+
+                <!-- Interactive Highlighting Sandbox Output -->
+                <div x-show="customAnalyzed" class="p-6 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700">
+                    <h3 class="font-bold text-lg mb-3 flex items-center">
+                        <i class="fa-solid fa-highlighter text-amber-500 mr-2"></i> Highlighted Analysis Output
+                    </h3>
+                    
+                    <div class="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 leading-relaxed text-sm mb-6" x-html="customHighlightedOutput">
+                    </div>
+
+                    <!-- Detected Features Breakdown Cards -->
+                    <h4 class="font-bold text-xs uppercase tracking-wider text-slate-500 mb-3">Detected Feature Breakdown:</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div class="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 text-xs">
+                            <span class="font-bold text-amber-800 dark:text-amber-300 block mb-1">1. Specific Objects Identified:</span>
+                            <span x-text="detectedFeatures.specific.join(', ') || 'None auto-detected'"></span>
+                        </div>
+                        <div class="p-3 bg-blue-50 dark:bg-blue-950/40 rounded-xl border border-blue-200 text-xs">
+                            <span class="font-bold text-blue-800 dark:text-blue-300 block mb-1">2. Present Tense Verbs:</span>
+                            <span x-text="detectedFeatures.present.join(', ') || 'None auto-detected'"></span>
+                        </div>
+                        <div class="p-3 bg-pink-50 dark:bg-pink-950/40 rounded-xl border border-pink-200 text-xs">
+                            <span class="font-bold text-pink-800 dark:text-pink-300 block mb-1">3. Adjectives Found:</span>
+                            <span x-text="detectedFeatures.adjectives.join(', ') || 'None auto-detected'"></span>
+                        </div>
+                        <div class="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-300 text-xs">
+                            <span class="font-bold text-slate-800 dark:text-slate-200 block mb-1">4. Action Verbs:</span>
+                            <span x-text="detectedFeatures.verbs.join(', ') || 'None auto-detected'"></span>
+                        </div>
+                        <div class="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 text-xs">
+                            <span class="font-bold text-emerald-800 dark:text-emerald-300 block mb-1">5. Sensory Words:</span>
+                            <span x-text="detectedFeatures.sensory.join(', ') || 'None auto-detected'"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Score Modal / Summary Report Card -->
+    <div x-show="showScoreModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" x-transition>
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-slate-200 dark:border-slate-700 shadow-2xl relative">
+            <button @click="showScoreModal = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-amber-100 dark:bg-amber-950 text-amber-500 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3">
+                    <i class="fa-solid fa-award"></i>
+                </div>
+                <h3 class="text-2xl font-bold">Performance Report Card</h3>
+                <p class="text-xs text-slate-500">Descriptive Text Language Features Mastery</p>
+            </div>
+
+            <!-- Report Card Details -->
+            <div class="p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3 mb-6 text-sm">
+                <div class="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-700">
+                    <span class="text-slate-500 text-xs">Student Mastery Score:</span>
+                    <span class="font-extrabold text-indigo-600 dark:text-indigo-400 text-base" x-text="`${calculateQuizScore()} / ${quizQuestions.length * 20}`"></span>
+                </div>
+                <div class="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-700">
+                    <span class="text-slate-500 text-xs">Modules Explored:</span>
+                    <span class="font-bold text-slate-800 dark:text-slate-200 text-xs" x-text="`${getVisitedCount()} / 5 Modules Completed`"></span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-500 text-xs">Achievement Badge:</span>
+                    <span class="px-2.5 py-1 bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-bold text-xs rounded-lg" x-text="getBadgeTitle()"></span>
+                </div>
+            </div>
+
+            <button @click="window.print()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow transition flex items-center justify-center">
+                <i class="fa-solid fa-print mr-2"></i> Print / Save Certificate Summary
+            </button>
+        </div>
+    </div>
+
+    <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-6 text-center text-xs text-slate-500">
+        <p>Deep Dive: Language Features of Descriptive Text • SMK & Senior High English Curriculum Module</p>
+    </footer>
+
+    <!-- Alpine.js Application Logic -->
+    <script>
+        function appData() {
+            return {
+                activeTab: 'overview',
+                darkMode: false,
+                showIndo: true,
+                showScoreModal: false,
+                
+                visitedModules: {
+                    specific: false,
+                    present: false,
+                    adjectives: false,
+                    verbs: false,
+                    sensory: false
+                },
+
+                markVisited(mod) {
+                    this.visitedModules[mod] = true;
+                },
+
+                calculateProgress() {
+                    let count = 0;
+                    for (let key in this.visitedModules) {
+                        if (this.visitedModules[key]) count++;
+                    }
+                    return Math.round((count / 5) * 100);
+                },
+
+                getVisitedCount() {
+                    return Object.values(this.visitedModules).filter(Boolean).length;
+                },
+
+                // Feature 1: Specific Quiz Items
+                specificQuizItems: [
+                    { text: "1. Paper Shredder", userAns: null, correct: "General", isCorrect: false },
+                    { text: "2. The Heavy-Duty Shredder in Room 204", userAns: null, correct: "Specific", isCorrect: false },
+                    { text: "3. Mrs. Anita, Executive Secretary of Governor's Office", userAns: null, correct: "Specific", isCorrect: false },
+                    { text: "4. Traditional Kalimantan Longhouses", userAns: null, correct: "General", isCorrect: false }
+                ],
+                checkSpecificAnswer(idx, ans) {
+                    this.specificQuizItems[idx].userAns = ans;
+                    this.specificQuizItems[idx].isCorrect = (ans === this.specificQuizItems[idx].correct);
+                },
+
+                // Feature 2: Present Tense Simulator
+                simSubject: 'The receptionist',
+                simVerb: 'greets',
+                checkGrammarSim() {
+                    const isSingularSubj = this.simSubject === 'The receptionist' || this.simSubject === 'Mrs. Anita';
+                    const hasS = this.simVerb === 'scans' || this.simVerb === 'greets';
+
+                    if (isSingularSubj && hasS) {
+                        return { isValid: true, reason: 'Singular subject correctly paired with Verb + s/es.' };
+                    } else if (!isSingularSubj && !hasS) {
+                        return { isValid: true, reason: 'Plural subject correctly paired with Base Verb.' };
+                    } else if (isSingularSubj && !hasS) {
+                        return { isValid: false, reason: 'Singular subjects require Verb + s/es (e.g. greets/scans).' };
+                    } else {
+                        return { isValid: false, reason: 'Plural subjects require Base Verb without -s (e.g. greet/scan).' };
+                    }
+                },
+
+                // Feature 3: Adjectives Bank
+                adjSearch: '',
+                adjFilter: 'all',
+                allAdjectives: [
+                    { word: 'Ergonomic', cat: 'physical', meaning: 'Sesuai postur tubuh' },
+                    { word: 'Spacious', cat: 'physical', meaning: 'Luas & lapang' },
+                    { word: 'Compact', cat: 'physical', meaning: 'Ringkas' },
+                    { word: 'Metallic', cat: 'physical', meaning: 'Terbuat dari logam' },
+                    { word: 'Efficient', cat: 'quality', meaning: 'Efisien / hemat energi' },
+                    { word: 'Confidential', cat: 'quality', meaning: 'Rahasia / berdokumen resmi' },
+                    { word: 'Systematic', cat: 'quality', meaning: 'Tersusun rapi' },
+                    { word: 'Meticulous', cat: 'trait', meaning: 'Sangat teliti' },
+                    { word: 'Articulate', cat: 'trait', meaning: 'Pandai berbicara' },
+                    { word: 'Responsive', cat: 'trait', meaning: 'Cepat tanggap' }
+                ],
+                get filteredAdjectives() {
+                    return this.allAdjectives.filter(item => {
+                        const matchesSearch = item.word.toLowerCase().includes(this.adjSearch.toLowerCase());
+                        const matchesCat = this.adjFilter === 'all' || item.cat === this.adjFilter;
+                        return matchesSearch && matchesCat;
+                    });
+                },
+                npAdj1: 'An ergonomic',
+                npAdj2: 'mesh',
+                npNoun: 'office chair',
+
+                // Feature 4: Action Verbs Workflow
+                selectedWorkflowStage: 'input',
+                workflowSentences: {
+                    input: [
+                        'The receptionist <strong>receives</strong> official letters at the front desk.',
+                        'She <strong>scans</strong> incoming physical memos into high-resolution PDFs.',
+                        'The clerk <strong>collects</strong> daily visitor logs every afternoon.'
+                    ],
+                    processing: [
+                        'Administrative assistants <strong>sort</strong> documents by urgent priority.',
+                        'The executive secretary <strong>types</strong> official invitations for the meeting.',
+                        'The editor <strong>edits</strong> the quarterly financial report carefully.'
+                    ],
+                    output: [
+                        'The archivist <strong>files</strong> physical contracts into moisture-resistant boxes.',
+                        'The clerk <strong>prints</strong> daily schedules using a laser printer.',
+                        'She <strong>distributes</strong> signed memos to all department heads.'
+                    ]
+                },
+
+                // Guided Analysis Highlight Filter
+                activeHighlight: 'all',
+                toggleFilter(type) {
+                    this.activeHighlight = type;
+                },
+
+                // Quiz Questions
+                quizQuestions: [
+                    {
+                        category: "1. Specific Object",
+                        question: "Which of the following phrases represents a SPECIFIC object suitable for a descriptive text?",
+                        options: [
+                            "Computers are widely used in modern offices.",
+                            "The Heavy-Duty Paper Shredder in Room 204.",
+                            "Secretaries handle daily paperwork.",
+                            "Traditional houses are made of timber."
+                        ],
+                        correct: 1,
+                        userAnswer: null,
+                        explanation: "'The Heavy-Duty Paper Shredder in Room 204' focuses on a unique, designated machine rather than a general category."
+                    },
+                    {
+                        category: "2. Simple Present Tense",
+                        question: "Choose the correct verb form: 'Mrs. Anita _____ incoming letters every morning.'",
+                        options: [
+                            "organizes",
+                            "organize",
+                            "organizing",
+                            "organized"
+                        ],
+                        correct: 0,
+                        userAnswer: null,
+                        explanation: "'Mrs. Anita' is a singular subject, requiring Verb + -s ('organizes') in Simple Present Tense."
+                    },
+                    {
+                        category: "3. Adjectives & Noun Phrases",
+                        question: "Which option forms a grammatically rich Noun Phrase?",
+                        options: [
+                            "Print quickly scanning",
+                            "A high-speed digital document scanner",
+                            "She types fast on keyboard",
+                            "Files stored in cabinet"
+                        ],
+                        correct: 1,
+                        userAnswer: null,
+                        explanation: "'A high-speed digital document scanner' follows the (Adjective + Adjective + Noun) descriptive noun phrase pattern."
+                    },
+                    {
+                        category: "4. Action Verbs",
+                        question: "Which of the following contains an Action Verb representing administrative processing?",
+                        options: [
+                            "The office is spacious and brightly lit.",
+                            "She is polite and articulate.",
+                            "The clerk scans and shreds outdated confidential papers.",
+                            "The archive room feels cold."
+                        ],
+                        correct: 2,
+                        userAnswer: null,
+                        explanation: "'Scans' and 'shreds' are physical action verbs carried out in office workflows."
+                    },
+                    {
+                        category: "5. Sensory Words",
+                        question: "'The smooth mahogany finish desk gives off an aromatic wood scent.' Which senses are appealed to?",
+                        options: [
+                            "Sight & Taste",
+                            "Touch & Smell",
+                            "Sound & Touch",
+                            "Taste & Sound"
+                        ],
+                        correct: 1,
+                        userAnswer: null,
+                        explanation: "'Smooth' appeals to Touch, while 'aromatic wood scent' appeals to Smell."
+                    }
+                ],
+
+                selectQuizOption(qIdx, optIdx) {
+                    this.quizQuestions[qIdx].userAnswer = optIdx;
+                },
+
+                calculateQuizScore() {
+                    let score = 0;
+                    this.quizQuestions.forEach(q => {
+                        if (q.userAnswer === q.correct) {
+                            score += 20;
+                        }
+                    });
+                    return score;
+                },
+
+                getBadgeTitle() {
+                    const score = this.calculateQuizScore();
+                    if (score === 100) return '🏆 Descriptive Language Master';
+                    if (score >= 80) return '⭐ Senior Language Analyst';
+                    if (score >= 60) return '📘 Intermediate Practitioner';
+                    return '🌱 Descriptive Apprentice';
+                },
+
+                // Custom Sandbox Analyzer
+                userCustomText: '',
+                sampleSandboxText: 'Mrs. Anita is an executive secretary at the Governor\'s Office in Palangka Raya. She works in a brightly lit and quiet workspace. Everyday, she prints important memos using a high-speed scanner.',
+                customAnalyzed: false,
+                customHighlightedOutput: '',
+                detectedFeatures: {
+                    specific: [],
+                    present: [],
+                    adjectives: [],
+                    verbs: [],
+                    sensory: []
+                },
+
+                analyzeCustomText() {
+                    if (!this.userCustomText.trim()) return;
+
+                    let text = this.userCustomText;
+                    this.detectedFeatures = { specific: [], present: [], adjectives: [], verbs: [], sensory: [] };
+
+                    // Key word highlight logic
+                    const wordMap = [
+                        { word: "Mrs. Anita", type: "specific", cls: "highlight-specific" },
+                        { word: "Governor's Office", type: "specific", cls: "highlight-specific" },
+                        { word: "Palangka Raya", type: "specific", cls: "highlight-specific" },
+                        { word: "works", type: "present", cls: "highlight-present" },
+                        { word: "prints", type: "verb", cls: "highlight-verb" },
+                        { word: "brightly lit", type: "sensory", cls: "highlight-sensory" },
+                        { word: "quiet", type: "sensory", cls: "highlight-sensory" },
+                        { word: "high-speed", type: "adjectives", cls: "highlight-adjective" },
+                        { word: "executive", type: "adjectives", cls: "highlight-adjective" }
+                    ];
+
+                    wordMap.forEach(item => {
+                        const regex = new RegExp(`\\b${item.word}\\b`, 'gi');
+                        if (regex.test(text)) {
+                            this.detectedFeatures[item.type].push(item.word);
+                            text = text.replace(regex, `<span class="${item.cls}">${item.word}</span>`);
+                        }
+                    });
+
+                    this.customHighlightedOutput = text;
+                    this.customAnalyzed = true;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
